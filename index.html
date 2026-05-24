@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>锦绣中华 — 宋韵风华版</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=Ma+Shan+Zheng&family=Zhi+Mang+Xing&display=swap" rel="stylesheet" />
+    
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+
+    <style>
+        :root {
+            --paper: #f2eada; /* Refined Song paper tone */
+            --ink: #333333;
+            --brand-red: #8b1b1b; /* Madder red */
+            --brand-gold: #b2945e;
+            --serif: 'Noto Serif SC', serif;
+            --title-font: 'Ma Shan Zheng', cursive;
+            --accent-font: 'Zhi Mang Xing', cursive;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--paper);
+            color: var(--ink);
+            font-family: var(--serif);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Continuous Scroll Texture Background */
+        .page-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                url("https://www.transparenttextures.com/patterns/old-map.png");
+            opacity: 0.4;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Horizontal Scroll Container */
+        .horizontal-wrapper {
+            overflow: hidden;
+        }
+
+        .horizontal-container {
+            display: flex;
+            width: 650vw; /* 5 scenes * 130vw */
+            height: 100vh;
+            will-change: transform;
+        }
+
+        .scene {
+            width: 130vw;
+            height: 100vh;
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5vw;
+            gap: 4vw;
+        }
+
+        /* Clean "Art Gallery" Layout */
+        .text-wrap {
+            width: 22vw;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .text-block {
+            text-align: left;
+            background: transparent;
+            padding: 0;
+            border: none;
+            position: relative;
+        }
+
+        .scene-number {
+            font-family: var(--title-font);
+            font-size: 1.4rem;
+            color: var(--brand-red);
+            margin-bottom: 20px;
+            writing-mode: vertical-rl;
+            position: absolute;
+            left: -40px;
+            top: 0;
+        }
+
+        .scene-title {
+            font-family: var(--title-font);
+            font-size: 3.8rem;
+            color: var(--ink);
+            letter-spacing: 10px;
+            margin-bottom: 25px;
+            line-height: 1.2;
+        }
+
+        .scene-desc {
+            font-size: 1rem;
+            line-height: 2.2;
+            color: #555;
+            letter-spacing: 1px;
+            border-top: 1px solid rgba(139, 27, 27, 0.2);
+            padding-top: 20px;
+        }
+
+        .painting-frame {
+            position: relative;
+            width: 55vw;
+            height: 100vh;
+            flex-shrink: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .painting-frame img {
+            max-width: 100%;
+            max-height: 75vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 30px 50px rgba(0,0,0,0.15));
+            border: 1px solid #d4c4a8;
+            padding: 5px;
+            background: #fff;
+            opacity: 0; /* Set initial opacity for fade-in animation */
+        }
+
+        /* Traditional "Silk" Border around image */
+        .painting-frame::before {
+            content: '';
+            position: absolute;
+            width: calc(100% + 40px);
+            height: calc(75vh + 40px);
+            border: 2px solid var(--brand-gold);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .chart-wrap {
+            width: 35vw;
+            height: 70vh;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 20px;
+        }
+
+        .chart-box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Content Overlays - Removed in favor of row layout */
+        .content-layer {
+            display: none;
+        }
+
+        .scene-title-wrap {
+            margin-bottom: 25px;
+        }
+
+        .scene-number {
+            font-family: var(--title-font);
+            font-size: 1.6rem;
+            color: var(--brand-red);
+            margin-bottom: 10px;
+            letter-spacing: 6px;
+        }
+
+        .scene-title {
+            font-family: var(--title-font);
+            font-size: 4.5rem; /* Balanced size */
+            color: var(--ink);
+            letter-spacing: 15px;
+            margin-bottom: 15px;
+        }
+
+        .scene-desc {
+            font-size: 1.1rem;
+            line-height: 2;
+            letter-spacing: 1px;
+            color: #444;
+            font-weight: 400;
+        }
+
+        /* Charts Section */
+        .chart-box {
+            width: 100%;
+            height: 55vh;
+            position: relative;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(139, 27, 27, 0.05);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Vertical Progress Navigation */
+        .nav-progress {
+            position: fixed;
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 400px;
+            width: 1px;
+            background: rgba(139, 27, 27, 0.2);
+            z-index: 1000;
+        }
+
+        .nav-handle {
+            position: absolute;
+            top: 0;
+            left: -5px;
+            width: 11px;
+            height: 50px;
+            background: var(--brand-red);
+            box-shadow: 0 0 15px rgba(139, 27, 27, 0.4);
+            cursor: pointer;
+        }
+
+        /* Red Seal Logo */
+        .seal-logo {
+            position: fixed;
+            top: 50px;
+            left: 50px;
+            width: 70px;
+            height: 70px;
+            background: var(--brand-red);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--title-font);
+            font-size: 1.4rem;
+            padding: 5px;
+            text-decoration: none;
+            z-index: 1000;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* Floating Calligraphy Labels */
+        .v-accent {
+            position: absolute;
+            writing-mode: vertical-rl;
+            font-family: var(--accent-font);
+            color: var(--brand-red);
+            font-size: 2.2rem;
+            opacity: 0.15;
+            letter-spacing: 15px;
+            pointer-events: none;
+        }
+
+        /* Scroll Hint */
+        .scroll-hint {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--serif);
+            font-size: 0.9rem;
+            letter-spacing: 10px;
+            opacity: 0.4;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            .horizontal-container {
+                width: 1500vw; /* Even wider for mobile to breathe */
+            }
+            .scene {
+                width: 300vw;
+                flex-direction: row; /* Keep it as a long strip */
+            }
+            .text-wrap, .painting-frame, .chart-wrap {
+                width: 100vw;
+            }
+            .scene-title { font-size: 3rem; }
+            .painting-frame img { max-width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    
+    <a href="#" class="seal-logo">锦绣<br>中华</a>
+
+    <div class="nav-progress">
+        <div class="nav-handle"></div>
+    </div>
+
+    <div class="scroll-hint">缓缓推动画卷</div>
+
+    <div class="horizontal-wrapper">
+        <div class="horizontal-container">
+            <!-- Scene 1: Geography -->
+            <section id="geo" class="scene">
+                <div class="v-accent" style="top: 10%; right: 5%;">千里江山</div>
+                <div class="text-wrap">
+                    <div class="text-block">
+                        <div class="scene-number">卷一</div>
+                        <h2 class="scene-title">地缘志</h2>
+                        <p class="scene-desc">
+                            以天地为轴，大川为线。中华地貌纵横万里，自青藏高寒而下，汇百川于沧海。人口之聚，随势而变，绘就族群分布之宏伟图景。
+                        </p>
+                    </div>
+                </div>
+                <div class="painting-frame">
+                    <img src="assets/地理.jpg" alt="Geography">
+                </div>
+                <div class="chart-wrap">
+                    <div class="chart-box">
+                        <div id="chart-geo" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scene 2: Language -->
+            <section id="lang" class="scene">
+                <div class="v-accent" style="bottom: 10%; right: 5%;">雅言韵传</div>
+                <div class="text-wrap">
+                    <div class="text-block">
+                        <div class="scene-number">卷二</div>
+                        <h2 class="scene-title">语脉志</h2>
+                        <p class="scene-desc">
+                            声振林木，响遏行云。五大语系交迭出的，是跨越千年的声音回响。汉藏、阿尔泰之语，虽形不同，然脉相承，共筑文明之基。
+                        </p>
+                    </div>
+                </div>
+                <div class="painting-frame">
+                    <img src="assets/语言.jpg" alt="Language">
+                </div>
+                <div class="chart-wrap">
+                    <div class="chart-box">
+                        <div id="chart-lang" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scene 3: Diet -->
+            <section id="diet" class="scene">
+                <div class="v-accent" style="top: 15%; left: 5%;">烟火人间</div>
+                <div class="text-wrap">
+                    <div class="text-block">
+                        <div class="scene-number">卷三</div>
+                        <h2 class="scene-title">膳食志</h2>
+                        <p class="scene-desc">
+                            五味调和，天地大同。南米北面之争，实为风土人情之萃。辛咸酸苦，不仅是舌尖之舞，更是族群性格与地理物产之契合。
+                        </p>
+                    </div>
+                </div>
+                <div class="painting-frame">
+                    <img src="assets/饮食.jpg" alt="Diet">
+                </div>
+                <div class="chart-wrap">
+                    <div class="chart-box">
+                        <div id="chart-diet" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scene 4: Architecture -->
+            <section id="arch" class="scene">
+                <div class="v-accent" style="top: 5%; right: 8%;">构筑春秋</div>
+                <div class="text-wrap">
+                    <div class="text-block">
+                        <div class="scene-number">卷四</div>
+                        <h2 class="scene-title">构筑志</h2>
+                        <p class="scene-desc">
+                            土木为媒，筑造长生。从吊脚古楼到青砖合院，建筑乃民族对大地的温柔回应。解析材质权重，见证跨越风雨的生命结构。
+                        </p>
+                    </div>
+                </div>
+                <div class="painting-frame">
+                    <img src="assets/建筑.jpg" alt="Architecture">
+                </div>
+                <div class="chart-wrap">
+                    <div class="chart-box">
+                        <div id="chart-arch" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scene 5: Music -->
+            <section id="inst" class="scene">
+                <div class="v-accent" style="bottom: 10%; left: 5%;">八音和谐</div>
+                <div class="text-wrap">
+                    <div class="text-block">
+                        <div class="scene-number">卷五</div>
+                        <h2 class="scene-title">声律志</h2>
+                        <p class="scene-desc">
+                            金石铿锵，丝竹清亮。乐器不仅是音色之源，更是民族魂靈之载体。玫瑰图中，尽展弹、拨、管、弦之和谐共鸣。
+                        </p>
+                    </div>
+                </div>
+                <div class="painting-frame">
+                    <img src="assets/乐器.jpg" alt="Instruments">
+                </div>
+                <div class="chart-wrap">
+                    <div class="chart-box">
+                        <div id="chart-inst" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        const container = document.querySelector(".horizontal-container");
+        const sections = gsap.utils.toArray(".scene");
+
+        // Main Horizontal Scroll Logic
+        let scrollTween = gsap.to(container, {
+            x: () => -(container.scrollWidth - window.innerWidth),
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".horizontal-wrapper",
+                pin: true,
+                scrub: 1,
+                end: () => "+=" + container.scrollWidth,
+                onUpdate: (self) => {
+                    // Sync navigation handle
+                    gsap.to(".nav-handle", {
+                        top: self.progress * 350, // Progress bar height - handle height
+                        duration: 0.1
+                    });
+                }
+            }
+        });
+
+        // Entrance Animations for each Scene
+        sections.forEach((section, i) => {
+            const text = section.querySelector(".text-wrap");
+            const chart = section.querySelector(".chart-wrap");
+            const img = section.querySelector(".painting-frame img");
+            const silk = section.querySelector(".painting-frame");
+
+            // Text and Chart entry
+            gsap.from([text, chart], {
+                y: 30,
+                opacity: 0,
+                duration: 1.2,
+                stagger: 0.2,
+                scrollTrigger: {
+                    trigger: section,
+                    containerAnimation: scrollTween,
+                    start: "left 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+
+            // Specific Fade-in Animation for the 5 Images
+            gsap.to(img, {
+                opacity: 1,
+                scale: 1,
+                duration: 2.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: section,
+                    containerAnimation: scrollTween,
+                    start: "left 60%", // Triggers as it enters the viewport
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // --- ECharts Initialization (Song Palette: Red, Gold, Ink, Muted Green) ---
+        const songColors = ['#8b1b1b', '#b2945e', '#616a4b', '#4a433a', '#c07a3b'];
+        const chartTextStyle = { 
+            fontFamily: 'Noto Serif SC', 
+            color: '#333',
+            fontSize: 12,
+            fontWeight: 400
+        };
+
+        // Geo Chart
+        const geoChart = echarts.init(document.getElementById('chart-geo'));
+        geoChart.setOption({
+            backgroundColor: 'transparent',
+            textStyle: chartTextStyle,
+            title: { 
+                text: '各民族人口规模分布', 
+                left: 'center', 
+                textStyle: { ...chartTextStyle, fontSize: 16, color: '#8b1b1b', fontWeight: 'bold' } 
+            },
+            grid: { left: '3%', right: '12%', top: '20%', bottom: '5%', containLabel: true },
+            xAxis: { 
+                type: 'value', 
+                name: '万人',
+                nameTextStyle: { color: '#8b1b1b' },
+                axisLine: { show: false }, 
+                splitLine: { lineStyle: { type: 'dashed', color: '#d4c4a8' } },
+                axisLabel: { color: '#666' }
+            },
+            yAxis: { 
+                type: 'category', 
+                data: ['其他民族', '藏族', '回族', '苗族', '维吾尔族', '满族', '壮族', '汉族'],
+                axisLine: { lineStyle: { color: '#8b1b1b' } },
+                axisLabel: { color: '#333', fontSize: 13 }
+            },
+            series: [{
+                name: '总人口',
+                type: 'bar',
+                data: [1200, 706, 1137, 1106, 1177, 1042, 1956, 128631],
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#b2945e' },
+                        { offset: 1, color: '#8b1b1b' }
+                    ]),
+                    borderRadius: [0, 5, 5, 0] 
+                },
+                label: { 
+                    show: true, 
+                    position: 'right', 
+                    color: '#8b1b1b',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    formatter: '{c}' 
+                }
+            }]
+        });
+
+        const langChart = echarts.init(document.getElementById('chart-lang'));
+        langChart.setOption({
+            title: { 
+                text: '中国语系多样性占比', 
+                left: 'center',
+                textStyle: { ...chartTextStyle, fontSize: 16, color: '#8b1b1b', fontWeight: 'bold' } 
+            },
+            tooltip: { trigger: 'item', textStyle: chartTextStyle },
+            series: [{
+                type: 'pie',
+                radius: ['35%', '65%'],
+                center: ['50%', '55%'],
+                avoidLabelOverlap: true,
+                itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+                data: [
+                    { value: 45, name: '汉藏语系' },
+                    { value: 22, name: '阿尔泰语系' },
+                    { value: 12, name: '南亚语系' },
+                    { value: 8, name: '南岛语系' },
+                    { value: 5, name: '印欧语系' }
+                ],
+                color: songColors,
+                label: { 
+                    show: true, 
+                    formatter: '{b}\n{d}%',
+                    textStyle: { ...chartTextStyle, fontSize: 12 }
+                }
+            }]
+        });
+
+        const dietChart = echarts.init(document.getElementById('chart-diet'));
+        dietChart.setOption({
+            title: { 
+                text: '中华饮食五味倾向模型', 
+                left: 'center',
+                textStyle: { ...chartTextStyle, fontSize: 16, color: '#8b1b1b', fontWeight: 'bold' } 
+            },
+            radar: {
+                indicator: [
+                    { name: '咸 (陆路/内陆)', max: 100 }, { name: '辛 (高地/潮湿)', max: 100 },
+                    { name: '酸 (西南/开胃)', max: 100 }, { name: '甜 (江南/富庶)', max: 100 },
+                    { name: '苦 (岭南/清热)', max: 100 }
+                ],
+                center: ['50%', '55%'],
+                radius: '65%',
+                axisName: { 
+                    color: '#333', 
+                    fontSize: 12,
+                    fontFamily: 'Noto Serif SC',
+                    backgroundColor: 'rgba(212, 196, 168, 0.2)',
+                    borderRadius: 3, 
+                    padding: [3, 5] 
+                },
+                splitArea: { show: false },
+                splitLine: { lineStyle: { color: '#d4c4a8', type: 'dashed' } },
+                axisLine: { lineStyle: { color: '#b2945e' } }
+            },
+            series: [{
+                type: 'radar',
+                data: [{ 
+                    value: [85, 75, 60, 90, 40], 
+                    name: '风味偏好',
+                    itemStyle: { color: '#8b1b1b' }, 
+                    areaStyle: { color: 'rgba(139, 27, 27, 0.4)' },
+                    label: { show: false }
+                }]
+            }]
+        });
+
+        const archChart = echarts.init(document.getElementById('chart-arch'));
+        archChart.setOption({
+            title: { 
+                text: '传统建筑材质应用权重', 
+                left: 'center',
+                textStyle: { ...chartTextStyle, fontSize: 16, color: '#8b1b1b', fontWeight: 'bold' } 
+            },
+            grid: { left: '5%', right: '5%', top: '20%', bottom: '10%', containLabel: true },
+            xAxis: { 
+                type: 'category', 
+                data: ['木', '土', '砖', '石', '竹'],
+                axisLabel: { ...chartTextStyle, fontSize: 14 },
+                axisLine: { lineStyle: { color: '#8b1b1b' } }
+            },
+            yAxis: { 
+                type: 'value',
+                axisLabel: { show: false },
+                splitLine: { show: false }
+            },
+            series: [{
+                type: 'bar',
+                barWidth: '40%',
+                data: [95, 80, 70, 60, 45],
+                itemStyle: {
+                    color: function(params) {
+                        const colors = ['#8b1b1b', '#b2945e', '#616a4b', '#4a433a', '#c07a3b'];
+                        return colors[params.dataIndex];
+                    },
+                    borderRadius: [5, 5, 0, 0]
+                },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    color: '#8b1b1b',
+                    fontFamily: 'Noto Serif SC'
+                }
+            }]
+        });
+
+        const instChart = echarts.init(document.getElementById('chart-inst'));
+        instChart.setOption({
+            title: { 
+                text: '古法八音分类系统', 
+                left: 'center',
+                textStyle: { ...chartTextStyle, fontSize: 16, color: '#8b1b1b', fontWeight: 'bold' } 
+            },
+            series: [{
+                name: '八音分类',
+                type: 'pie',
+                roseType: 'radius',
+                radius: [20, 110],
+                center: ['50%', '55%'],
+                data: [
+                    { value: 40, name: '丝 (琴/瑟)' }, { value: 35, name: '竹 (笛/箫)' },
+                    { value: 30, name: '金 (钟/铙)' }, { value: 25, name: '石 (磬)' },
+                    { value: 20, name: '土 (埙)' }, { value: 15, name: '木 (柷/敔)' },
+                    { value: 10, name: '革 (鼓)' }, { value: 5, name: '匏 (笙)' }
+                ],
+                color: [...songColors, '#616a4b', '#4a433a', '#c07a3b'],
+                label: { 
+                    show: true, 
+                    formatter: '{b}',
+                    textStyle: { ...chartTextStyle, fontSize: 11 }
+                }
+            }]
+        });
+
+        window.addEventListener('resize', () => {
+            [geoChart, langChart, dietChart, archChart, instChart].forEach(c => c.resize());
+        });
+    </script>
+</body>
+</html>
